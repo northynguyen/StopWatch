@@ -66,7 +66,7 @@ export default class App extends Component {
       const now = new Date().getTime();
       const lapTime = now - this.state.lastLapTime;
       this.setState({
-        laps: [lapTime, ...this.state.laps],
+        laps: [...this.state.laps, lapTime],
         lastLapTime: now,
       });
     } else {
