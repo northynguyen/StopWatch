@@ -4,6 +4,7 @@ import {
   Text,
   View,
   TouchableHighlight,
+  ScrollView,
 } from 'react-native';
 
 import formatTime from 'minutes-seconds-milliseconds';
@@ -12,8 +13,9 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 interface AppState {
   running: boolean;
   startTime: Date | null;
-  laps: number[]; // Replace 'any[]' with the appropriate type for laps
-  timeElapsed: number | null; // Replace 'any[]' with the appropriate type for laps
+  laps: number[];
+  timeElapsed: number | null;
+  lastLapTime: number;
 }
 
 export default class App extends Component {
@@ -22,6 +24,7 @@ export default class App extends Component {
     startTime: null,
     laps: [],
     timeElapsed: null,
+    lastLapTime: 0,
   };
 
   interval: NodeJS.Timeout | undefined;
@@ -32,6 +35,7 @@ export default class App extends Component {
       running: false,
       startTime: null,
       laps: [],
+      lastLapTime: 0,
     };
     this.handleStartPress = this.handleStartPress.bind(this);
     this.startStopButton = this.startStopButton.bind(this);
@@ -47,18 +51,24 @@ export default class App extends Component {
       });
     }
     else {
-      this.setState({ startTime: new Date(), timeElapsed: 0, running: true });
+      const startTime = new Date();
+      this.setState({ startTime, lastLapTime: startTime.getTime(), timeElapsed: 0, running: true });
       this.interval = setInterval(() => {
-        const timeElapsed = new Date().getTime() - this.state.startTime!.getTime();
+        const now = new Date().getTime();
+        const timeElapsed = now - this.state.startTime!.getTime();
         this.setState({ timeElapsed });
-      }, 30);
+      }, 50);
     }
   }
 
   handleLapPress() {
     if (this.state.running) {
-      const lap = this.state.timeElapsed;
-      this.setState({ laps: [...this.state.laps, lap] });
+      const now = new Date().getTime();
+      const lapTime = now - this.state.lastLapTime;
+      this.setState({
+        laps: [lapTime, ...this.state.laps],
+        lastLapTime: now,
+      });
     } else {
       this.setState({ laps: [], timeElapsed: null }); // Reset functionality
     }
@@ -85,12 +95,21 @@ export default class App extends Component {
   }
 
   laps() {
-    return this.state.laps.map(function (time, index) {
+    const maxLap = Math.max(...this.state.laps);
+    const minLap = Math.min(...this.state.laps);
+    return this.state.laps.slice().reverse().map((time, index) => {
+      let lapStyle = styles.lapText;
+      let lapIndex = this.state.laps.length - index;
+      if (time === maxLap) {
+        lapStyle = { ...styles.lapText, color: 'red' }; // Màu đỏ cho thời gian cao nhất
+      } else if (time === minLap) {
+        lapStyle = { ...styles.lapText, color: 'green' }; // Màu xanh cho thời gian thấp nhất
+      }
       return <View key={index} style={styles.lap}>
         <Text style={styles.lapText}>
-          Lap {index + 1}
+          Lap {lapIndex}
         </Text>
-        <Text style={styles.lapText}>
+        <Text style={lapStyle}>
           {time ? formatTime(time) : '00:00,00'}
         </Text>
       </View>;
@@ -115,9 +134,9 @@ export default class App extends Component {
           </View>
         </View>
 
-        <View style={styles.footer}>
+        <ScrollView style={styles.footer}>
           {this.laps()}
-        </View>
+        </ScrollView>
       </View>
     );
   }
@@ -141,12 +160,14 @@ const styles = StyleSheet.create({
   timeWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
+    flexDirection: 'column',
     marginTop: 70,
   },
   buttonWrapper: {
-    marginTop: 20,
+    marginTop: 50,
+    marginHorizontal: 20,
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
     color: 'white',
   },
@@ -175,6 +196,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: 'white',
   },
+
 
   stopButton: {
     borderColor: 'red',
