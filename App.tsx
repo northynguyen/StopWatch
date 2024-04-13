@@ -7,12 +7,13 @@ import {
 } from 'react-native';
 
 import formatTime from 'minutes-seconds-milliseconds';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 interface AppState {
   running: boolean;
   startTime: Date | null;
-  laps: any[]; // Replace 'any[]' with the appropriate type for laps
-  timeElapsed: Date | null; // Replace 'any[]' with the appropriate type for laps
+  laps: number[]; // Replace 'any[]' with the appropriate type for laps
+  timeElapsed: number | null; // Replace 'any[]' with the appropriate type for laps
 }
 
 export default class App extends Component {
@@ -44,44 +45,41 @@ export default class App extends Component {
       this.setState({
         running: false,
       });
-      return;
     }
-
-    this.setState({ startTime: new Date() });
-
-    this.interval = setInterval(() => {
-      if (this.state.startTime) {
-        this.setState({
-          timeElapsed: new Date().getTime() - this.state.startTime.getTime(),
-          return: true,
-        });
-      }
-    }, 30);
+    else {
+      this.setState({ startTime: new Date(), timeElapsed: 0, running: true });
+      this.interval = setInterval(() => {
+        const timeElapsed = new Date().getTime() - this.state.startTime!.getTime();
+        this.setState({ timeElapsed });
+      }, 30);
+    }
   }
 
   handleLapPress() {
-    var lap = this.state.timeElapsed;
-
-    this.setState({
-      laps: this.state.laps.concat([lap]),
-    });
+    if (this.state.running) {
+      const lap = this.state.timeElapsed;
+      this.setState({ laps: [...this.state.laps, lap] });
+    } else {
+      this.setState({ laps: [], timeElapsed: null }); // Reset functionality
+    }
   }
 
   startStopButton() {
     var style = this.state.running ? styles.stopButton : styles.startButton;
-
+    var textStyle = this.state.running ? styles.StopbuttonText : styles.StartbuttonText;
     return <TouchableHighlight underlayColor="gray" onPress={this.handleStartPress} style={[style, styles.button]}>
-      <Text>
+      <Text style={textStyle}>
         {this.state.running ? 'Stop' : 'Start'}
       </Text>
     </TouchableHighlight>;
   }
 
   lapButton() {
+    const buttonText = this.state.running ? 'Lap' : 'Reset';
     return <TouchableHighlight style={styles.button}
       underlayColor="gray" onPress={this.handleLapPress}>
-      <Text>
-        Lap
+      <Text style={{ color: 'white', fontWeight: 'bold' }}>
+        {buttonText}
       </Text>
     </TouchableHighlight>;
   }
@@ -90,10 +88,10 @@ export default class App extends Component {
     return this.state.laps.map(function (time, index) {
       return <View key={index} style={styles.lap}>
         <Text style={styles.lapText}>
-          Lap # {index + 1}
+          Lap {index + 1}
         </Text>
         <Text style={styles.lapText}>
-          {time ? formatTime(time) : '00:00:00'}
+          {time ? formatTime(time) : '00:00,00'}
         </Text>
       </View>;
     });
@@ -106,7 +104,7 @@ export default class App extends Component {
           <View>
             <View style={styles.timeWrapper}>
               <Text style={styles.timer}>
-                {this.state.timeElapsed ? formatTime(this.state.timeElapsed) : '00:00:00'}
+                {this.state.timeElapsed ? formatTime(this.state.timeElapsed) : '00:00,00'}
               </Text>
             </View>
 
@@ -132,7 +130,7 @@ export default class App extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    margin: 20,
+    backgroundColor: 'black',
   },
   header: {
     flex: 1,
@@ -143,19 +141,21 @@ const styles = StyleSheet.create({
   timeWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 70,
   },
   buttonWrapper: {
     marginTop: 20,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
+    color: 'white',
   },
   lap: {
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     flexDirection: 'row',
-    backgroundColor: 'lightgrey',
     padding: 10,
     marginTop: 10,
+    color: 'white',
   },
 
   button: {
@@ -165,20 +165,34 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
+    borderColor: 'grey',
   },
   timer: {
-    fontSize: 60,
+    fontSize: 80,
+    color: 'white',
   },
   lapText: {
-    fontSize: 30,
+    fontSize: 20,
+    color: 'white',
   },
 
   stopButton: {
     borderColor: 'red',
+    backgroundColor: '#dbbcbc',
   },
   startButton: {
     borderColor: 'green',
+    backgroundColor: '#80b28d',
   },
 
-
+  StopbuttonText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: 'red',
+  },
+  StartbuttonText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: 'green',
+  },
 });
